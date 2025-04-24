@@ -5,12 +5,16 @@ import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 import { filesAPI } from '../../services/api'
 import { downloadFile, formatDate } from '../../utils/helpers'
+import Button from '../common/Button'
+import TextField from '../common/TextField'
 
 const DocTile = ({ file, onDelete }) => {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
   const menuRef = useRef(null)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareEmail, setShareEmail] = useState("")
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen)
@@ -38,37 +42,22 @@ const DocTile = ({ file, onDelete }) => {
 
   const handleShareClick = () => {
     closeMenu()
-    // Open the share modal - will be implemented later
-    toast.info("Share modal opens here")
+    setShowShareModal(true)
   }
 
   const handleDownload = async () => {
-    if (isDownloading) return
 
-    setIsDownloading(true)
-    setDownloadProgress(0)
-
-    // Simulate download progress
-    const progressInterval = setInterval(() => {
-      setDownloadProgress(prev => {
-        const newProgress = prev + (Math.random() * 0.1)
-        return newProgress >= 1 ? 1 : newProgress
-      })
-    }, 200)
-
-    try {
-      await downloadFile(file.fileUrl, file.name)
-      toast.success("File downloaded successfully")
-    } catch (error) {
-      console.error('Error downloading file:', error)
-      toast.error("Failed to download file")
-    } finally {
-      clearInterval(progressInterval)
-      setDownloadProgress(1)
-      setTimeout(() => {
+    if (!isDownloading) {
+      setIsDownloading(true)
+      try {
+        await downloadFile(file.fileUrl, file.name, setDownloadProgress)
+      } catch (error) {
+        console.error('Error downloading file:', error)
+        toast.error("Failed to download file")
+      } finally {
         setIsDownloading(false)
         setDownloadProgress(0)
-      }, 500)
+      }
     }
   }
 
@@ -166,6 +155,48 @@ const DocTile = ({ file, onDelete }) => {
           )}
         </AnimatePresence>
       </div>
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-96 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">{file.name}</h2>
+              <button onClick={() => setShowShareModal(false)} className="text-gray-600 hover:text-black">&times;</button>
+            </div>
+            <TextField
+              type="email"
+              placeholder="Enter email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+
+            />
+            <Button
+              text="Send"
+              onClick={async () => {
+                try {
+                  const response = await fetch(`http://3.12.1.104:4000/api/files/${file._id}/share-email`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-auth-token": localStorage.token,
+                    },
+                    body: JSON.stringify({ emailAddress: shareEmail })
+                  })
+                  if (response.ok) {
+                    toast.success("Link sent to " + shareEmail)
+                    setShowShareModal(false)
+                    setShareEmail("")
+                  } else {
+                    toast.error("Failed to send link")
+                  }
+                } catch (err) {
+                  toast.error("Error occurred while sending link")
+                  console.error(err)
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Search from './pages/Search'
 import SplashScreen from './pages/SplashScreen'
+import FileRedirectHandler from './pages/ FileRedirectHandler'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -28,6 +29,7 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
+      <Route path="/:fileId" element={<FileRedirectHandler />} />
         <Route path="/" element={<SplashScreen />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

@@ -57,6 +57,7 @@ export const downloadFile = async (url, filename) => {
     document.body.appendChild(link)
     link.click()
     link.remove()
+    window.URL.revokeObjectURL(downloadUrl)
   } catch (error) {
     console.error('Download error:', error)
     showError('Failed to download file')
